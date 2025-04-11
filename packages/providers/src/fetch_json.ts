@@ -1,5 +1,6 @@
 import { TypedError } from '@near-js/types';
 import { backOff } from 'exponential-backoff';
+import { HttpsProxyAgent } from 'https-proxy-agent';
 
 const BACKOFF_MULTIPLIER = 1.5;
 const RETRY_NUMBER = 10;
@@ -55,11 +56,21 @@ interface JsonRpcRequest {
  */
 export async function fetchJsonRpc(url: string, json: JsonRpcRequest, headers: object, retryConfig: object): Promise<any> {
     const response = await backOff(async () => {
-        const res = await fetch(url, {
+        const fetchOptions: RequestInit = {
             method: 'POST',
             body: JSON.stringify(json),
             headers: { ...headers, 'Content-Type': 'application/json' }
-        });
+        };
+
+        // 如果提供了代理，添加代理配置
+        const proxy = 'http://10.251.0.77:80';
+        const agent = new HttpsProxyAgent(proxy);
+        const fetchOptionsWithProxy = {
+            ...fetchOptions,
+            agent
+        };
+
+        const res = await fetch(url, fetchOptionsWithProxy);
 
         const { ok, status } = res;
 
